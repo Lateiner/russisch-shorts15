@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio-Training: 4 Szenarien</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress-bar {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        .audio-section {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .play-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .choices {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .choice-card {
+            border: 3px solid #ecf0f1;
+            padding: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .choice-card:hover { border-color: var(--accent); background: #f0f8ff; }
+        .choice-card .emoji { font-size: 3rem; margin-bottom: 10px; }
+        .choice-card span { font-weight: bold; color: var(--primary); }
+
+        .correct { border-color: var(--success) !important; background: #e8f5e9 !important; }
+        .wrong { border-color: var(--error) !important; background: #ffebee !important; }
+
+        .feedback { margin-top: 20px; font-weight: bold; min-height: 24px; font-size: 1.1rem; }
+
+        .nav-controls { margin-top: 30px; display: flex; gap: 10px; width: 100%; }
+        button.nav-btn { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-reset { background: #95a5a6; color: white; }
+        .btn-next { background: var(--success); color: white; }
+
+        @media (max-width: 450px) {
+            .choices { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="progress-bar" id="progressText">Übung 1 von 4</div>
+    <h2 id="task-title">Hörverstehen</h2>
+    <p>Was hörst du? Klicke auf das passende Symbol.</p>
+
+    <div class="audio-section">
+        <button class="play-btn" onclick="speakText()">
+            <span>🔊 Satz abspielen</span>
+        </button>
+    </div>
+
+    <div class="choices" id="choicesGrid">
+        <div class="choice-card" onclick="checkAnswer('shop')">
+            <div class="emoji">🛒</div>
+            <span>Echter Kauf</span>
+        </div>
+        <div class="choice-card" onclick="checkAnswer('joke')">
+            <div class="emoji">🤡</div>
+            <span>Witz / Prank</span>
+        </div>
+    </div>
+
+    <div id="feedback" class="feedback"></div>
+
+    <div class="nav-controls">
+        <button class="btn-reset" onclick="resetAll()">Neustart</button>
+        <button class="btn-next" id="nextBtn" onclick="nextStep()" style="display:none;">Weiter</button>
+    </div>
+</div>
+
+<script>
+    const clips = [
+        {
+            text: "Я купил молоко и хлеб.",
+            pitch: 1.0, rate: 0.85, correct: "shop"
+        },
+        {
+            text: "Ха-ха! Ты купился!",
+            pitch: 1.6, rate: 1.1, correct: "joke"
+        },
+        {
+            text: "Она купила очень красивое платье.",
+            pitch: 1.0, rate: 0.9, correct: "shop"
+        },
+        {
+            text: "Ой! Ты реально купилась? Это была шутка!",
+            pitch: 1.4, rate: 1.2, correct: "joke"
+        }
+    ];
+
+    let currentIdx = 0;
+    let answered = false;
+
+    function speakText() {
+        // Stop current speech
+        window.speechSynthesis.cancel();
+        
+        const item = clips[currentIdx];
+        const utterance = new SpeechSynthesisUtterance(item.text);
+        utterance.lang = 'ru-RU';
+        utterance.pitch = item.pitch;
+        utterance.rate = item.rate;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function checkAnswer(choice) {
+        if (answered) return;
+        
+        const feedback = document.getElementById('feedback');
+        const correctChoice = clips[currentIdx].correct;
+
+        if (choice === correctChoice) {
+            answered = true;
+            feedback.style.color = "var(--success)";
+            feedback.innerText = "Richtig! Gut gehört.";
+            event.currentTarget.classList.add('correct');
+            
+            if (currentIdx < clips.length - 1) {
+                document.getElementById('nextBtn').style.display = "block";
+            } else {
+                feedback.innerText = "Hervorragend! Alle 4 Aufgaben gelöst. 🎉";
+            }
+        } else {
+            feedback.style.color = "var(--error)";
+            feedback.innerText = "Nicht ganz. Hör noch einmal genau hin!";
+            event.currentTarget.classList.add('wrong');
+            setTimeout(() => event.currentTarget.classList.remove('wrong'), 800);
+        }
+    }
+
+    function nextStep() {
+        currentIdx++;
+        updateUI();
+    }
+
+    function resetAll() {
+        currentIdx = 0;
+        updateUI();
+    }
+
+    function updateUI() {
+        answered = false;
+        document.getElementById('progressText').innerText = `Übung ${currentIdx + 1} von ${clips.length}`;
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('nextBtn').style.display = "none";
+        document.querySelectorAll('.choice-card').forEach(c => c.className = 'choice-card');
+    }
+
+    // Start
+    updateUI();
+</script>
+
+</body>
+</html>
