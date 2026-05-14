@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dialog-Puzzle: Das Verb купиться</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .puzzle-container {
+            width: 100%;
+            max-width: 650px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #eee;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        h2 { margin: 0; font-size: 1.1rem; color: var(--primary); }
+
+        .pool {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 30px;
+            min-height: 100px;
+        }
+
+        .sentence-card {
+            background: #fff;
+            border: 2px solid var(--accent);
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .sentence-card:hover { background: #f0f8ff; transform: scale(1.01); }
+        .sentence-card.selected { opacity: 0.3; pointer-events: none; border-color: #ccc; }
+
+        .result-area {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 120px;
+            border: 2px dashed #bdc3c7;
+        }
+
+        .ordered-item {
+            background: var(--primary);
+            color: white;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            display: flex;
+            gap: 10px;
+            font-size: 0.9rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .feedback {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        button:active { opacity: 0.7; }
+
+        .btn-reset { background: #95a5a6; color: white; }
+        .btn-next { background: var(--success); color: white; }
+
+        @media (max-width: 480px) {
+            .puzzle-container { padding: 15px; }
+            h2 { font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="puzzle-container">
+    <div class="nav-header">
+        <h2 id="dialog-title">Dialog 1 von 4</h2>
+    </div>
+    
+    <p style="text-align:center; font-size: 0.9rem; color: #555; margin-bottom: 15px;">
+        Bringe die Sätze in die logische Reihenfolge:
+    </p>
+
+    <div class="pool" id="sentencePool"></div>
+
+    <div class="result-area" id="resultArea">
+        <div id="orderedList"></div>
+    </div>
+
+    <div id="feedback" class="feedback"></div>
+
+    <div class="controls">
+        <button class="btn-reset" onclick="fullReset()">Neustart</button>
+        <button class="btn-next" id="nextBtn" onclick="nextDialog()" style="display:none;">Nächster Dialog</button>
+    </div>
+</div>
+
+<script>
+    const allDialogs = [
+        [
+            { id: 1, text: "— Привет! Представляешь, я вчера выиграл миллион долларов!" },
+            { id: 2, text: "— Да ты что! Ого! А где ты его выиграл?" },
+            { id: 3, text: "— Купился! Я пошутил." }
+        ],
+        [
+            { id: 1, text: "— Смотри, у меня на плече огромный паук!" },
+            { id: 2, text: "— А-а-а! Сбрось его скорее, я боюсь!" },
+            { id: 3, text: "— Купилась! Никакого паука нет." }
+        ],
+        [
+            { id: 1, text: "— Ты слышал? Завтра все уроки отменили!" },
+            { id: 2, text: "— Серьёзно? Ура! Откуда ты знаешь?" },
+            { id: 3, text: "— Купился! Завтра контрольная работа." }
+        ],
+        [
+            { id: 1, text: "— Я купил нам билеты на концерт в Париж!" },
+            { id: 2, text: "— Боже мой! Мы правда летим в Париж?" },
+            { id: 3, text: "— Купилась! Я купил только пиццу." }
+        ]
+    ];
+
+    let currentIdx = 0;
+    let userOrder = [];
+
+    function initPuzzle() {
+        const pool = document.getElementById('sentencePool');
+        const list = document.getElementById('orderedList');
+        const fb = document.getElementById('feedback');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        document.getElementById('dialog-title').innerText = `Dialog ${currentIdx + 1} von ${allDialogs.length}`;
+        pool.innerHTML = '';
+        list.innerHTML = '';
+        fb.innerText = '';
+        nextBtn.style.display = 'none';
+        userOrder = [];
+
+        const currentDialog = allDialogs[currentIdx];
+        // Sätze zufällig mischen
+        const shuffled = [...currentDialog].sort(() => Math.random() - 0.5);
+
+        shuffled.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'sentence-card';
+            card.innerText = item.text;
+            card.onclick = () => {
+                card.classList.add('selected');
+                userOrder.push(item);
+                
+                const div = document.createElement('div');
+                div.className = 'ordered-item';
+                div.innerHTML = `<span style="opacity:0.6">${userOrder.length}.</span> ${item.text}`;
+                list.appendChild(div);
+
+                if (userOrder.length === currentDialog.length) checkResult();
+            };
+            pool.appendChild(card);
+        });
+    }
+
+    function checkResult() {
+        const fb = document.getElementById('feedback');
+        const currentDialog = allDialogs[currentIdx];
+        const isCorrect = userOrder.every((v, i) => v.id === currentDialog[i].id);
+
+        if (isCorrect) {
+            fb.style.color = 'var(--success)';
+            fb.innerText = "Richtig! Gut gemacht.";
+            if (currentIdx < allDialogs.length - 1) {
+                document.getElementById('nextBtn').style.display = 'block';
+            } else {
+                fb.innerText = "Super! Du hast alle Dialoge gelöst. 🎉";
+            }
+        } else {
+            fb.style.color = 'var(--error)';
+            fb.innerText = "Falsche Reihenfolge. Versuche es noch einmal!";
+            // Kleiner Delay, damit man den Fehler kurz sieht, bevor man neustartet
+            setTimeout(() => {
+                const list = document.getElementById('orderedList');
+                const cards = document.querySelectorAll('.sentence-card');
+                list.innerHTML = '';
+                cards.forEach(c => c.classList.remove('selected'));
+                userOrder = [];
+                fb.innerText = "Nochmal probieren...";
+            }, 1500);
+        }
+    }
+
+    function nextDialog() {
+        currentIdx++;
+        initPuzzle();
+    }
+
+    function fullReset() {
+        currentIdx = 0;
+        initPuzzle();
+    }
+
+    // Initialer Start
+    initPuzzle();
+</script>
+
+</body>
+</html>
