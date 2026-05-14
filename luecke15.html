@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lückentext: Mix-Training</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sentence-box {
+            font-size: 1.4rem;
+            margin-bottom: 30px;
+            line-height: 1.8;
+            padding: 25px;
+            background: #fdfdfd;
+            border-radius: 12px;
+            border: 1px solid #eee;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .gap {
+            display: inline-block;
+            min-width: 130px;
+            border-bottom: 3px solid var(--accent);
+            color: var(--accent);
+            font-weight: bold;
+            padding: 0 10px;
+            transition: all 0.3s;
+        }
+
+        .translation {
+            display: block;
+            font-size: 0.95rem;
+            color: #95a5a6;
+            margin-top: 15px;
+            font-style: italic;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #ecf0f1;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--primary);
+        }
+
+        .option-btn:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .option-btn.correct {
+            background-color: var(--success) !important;
+            color: white;
+            border-color: var(--success);
+        }
+
+        .option-btn.wrong {
+            background-color: var(--error) !important;
+            color: white;
+            border-color: var(--error);
+        }
+
+        .feedback {
+            margin-top: 20px;
+            font-weight: bold;
+            min-height: 24px;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button.nav-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            background: var(--primary);
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        button.nav-btn:hover { opacity: 0.9; }
+
+        @media (min-width: 480px) {
+            .options-grid { grid-template-columns: 1fr 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="progress" id="progress">Aufgabe 1 von 5</div>
+    
+    <div class="sentence-box">
+        <span id="sentence-start"></span>
+        <span class="gap" id="gap-field">? ? ?</span>
+        <span id="sentence-end"></span>
+        <span class="translation" id="translation"></span>
+    </div>
+
+    <div class="options-grid" id="options"></div>
+
+    <div id="feedback" class="feedback"></div>
+
+    <div class="controls">
+        <button class="nav-btn" style="background:#95a5a6" onclick="resetAll()">Neustart</button>
+        <button class="nav-btn" id="nextBtn" onclick="nextQuestion()" style="display:none; background:var(--success)">Nächster Satz</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            start: "Она", end: "на мою шутку.", gap: "купилась", 
+            options: ["купилась", "купила", "купили"],
+            hint: "(Sie ist auf meinen Scherz reingefallen.)"
+        },
+        {
+            start: "Я", end: "хлеб в магазине.", gap: "купил", 
+            options: ["купил", "купился", "купила"],
+            hint: "(Ich habe Brot im Laden gekauft.)"
+        },
+        {
+            start: "Ты", end: "! Это был пранк.", gap: "купился", 
+            options: ["купился", "купила", "купило"],
+            hint: "(Du [mask.] bist reingefallen! Das war ein Prank.)"
+        },
+        {
+            start: "Мы", end: "новый телевизор.", gap: "купили", 
+            options: ["купили", "купились", "купила"],
+            hint: "(Wir haben einen neuen Fernseher gekauft.)"
+        },
+        {
+            start: "Вы все", end: "на этот розыгрыш!", gap: "купились", 
+            options: ["купились", "купили", "купилась"],
+            hint: "(Ihr alle seid auf diesen Streich reingefallen!)"
+        }
+    ];
+
+    let currentIdx = 0;
+    let answered = false;
+
+    // Fisher-Yates Shuffle Algorithmus zum Mischen der Antworten
+    function shuffleArray(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    function loadQuestion() {
+        answered = false;
+        const q = questions[currentIdx];
+        document.getElementById('progress').innerText = `Aufgabe ${currentIdx + 1} von ${questions.length}`;
+        document.getElementById('sentence-start').innerText = q.start + " ";
+        document.getElementById('sentence-end').innerText = " " + q.end;
+        document.getElementById('gap-field').innerText = "? ? ?";
+        document.getElementById('gap-field').style.color = "var(--accent)";
+        document.getElementById('translation').innerText = q.hint;
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('nextBtn').style.display = "none";
+
+        const optionsContainer = document.getElementById('options');
+        optionsContainer.innerHTML = "";
+
+        // Kopie der Optionen erstellen und mischen
+        const shuffledOptions = shuffleArray([...q.options]);
+
+        shuffledOptions.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(opt, btn);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selected, btn) {
+        if (answered) return;
+        const q = questions[currentIdx];
+        const feedback = document.getElementById('feedback');
+
+        if (selected === q.gap) {
+            answered = true;
+            btn.classList.add('correct');
+            document.getElementById('gap-field').innerText = q.gap;
+            document.getElementById('gap-field').style.color = "var(--success)";
+            feedback.style.color = "var(--success)";
+            feedback.innerText = "Richtig! ✨";
+            
+            if (currentIdx < questions.length - 1) {
+                document.getElementById('nextBtn').style.display = "block";
+            } else {
+                feedback.innerText = "Super! Du hast alle Sätze gemeistert. 🎉";
+            }
+        } else {
+            btn.classList.add('wrong');
+            feedback.style.color = "var(--error)";
+            feedback.innerText = "Nicht ganz, probier's nochmal!";
+            setTimeout(() => {
+                if(!answered) btn.classList.remove('wrong');
+            }, 1000);
+        }
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        loadQuestion();
+    }
+
+    function resetAll() {
+        currentIdx = 0;
+        loadQuestion();
+    }
+
+    // Initialstart
+    loadQuestion();
+</script>
+
+</body>
+</html>
