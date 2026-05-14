@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernmodul: Das Verb купиться</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .module-container {
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .task-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            display: none; /* Wird per JS gesteuert */
+        }
+
+        .task-card.active { display: block; }
+
+        h2 { margin-top: 0; color: var(--accent); border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+        
+        /* Drag & Drop Styles */
+        .drop-zone {
+            border: 2px dashed #bdc3c7;
+            padding: 20px;
+            margin: 10px 0;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+        .draggable {
+            background: var(--accent);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: grab;
+            margin: 5px;
+            user-select: none;
+        }
+
+        /* Quiz Styles */
+        .options { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .opt-btn {
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.2s;
+        }
+        .opt-btn:hover { border-color: var(--accent); }
+        .correct { background-color: #d4edda !important; border-color: var(--success) !important; }
+        .wrong { background-color: #f8d7da !important; border-color: var(--error) !important; }
+
+        /* Navigation */
+        .nav-controls { display: flex; justify-content: space-between; margin-top: 20px; }
+        button.main-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+        }
+        button.main-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            width: 16.6%;
+            transition: width 0.3s;
+        }
+
+        .feedback-text { margin-top: 15px; font-weight: bold; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="module-container">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+    <!-- AUFGABE 1: Drag & Drop Bedeutung -->
+    <div class="task-card active" id="task1">
+        <h2>1. Wortbedeutung</h2>
+        <p>Ordne die russischen Verben den richtigen Symbolen zu:</p>
+        <div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+            <div>
+                <p>🛒 Waren erwerben:</p>
+                <div class="drop-zone" data-ans="купить" id="dz1"></div>
+            </div>
+            <div>
+                <p>🤡 Einen Scherz glauben:</p>
+                <div class="drop-zone" data-ans="купиться" id="dz2"></div>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: center; margin-top: 10px;">
+            <div class="draggable" draggable="true" id="v1">купить</div>
+            <div class="draggable" draggable="true" id="v2">купиться</div>
+        </div>
+    </div>
+
+    <!-- AUFGABE 2: Multiple Choice Kontext -->
+    <div class="task-card" id="task2">
+        <h2>2. Der fliegende Teppich</h2>
+        <p>„Ich habe einen echten fliegenden Teppich!“ — „Wow, zeig her!“</p>
+        <p><strong>Was sagt der Erzähler nun?</strong></p>
+        <div class="options">
+            <button class="opt-btn" onclick="checkQ(this, false)">Я купил.</button>
+            <button class="opt-btn" onclick="checkQ(this, true)">Купился!</button>
+            <button class="opt-btn" onclick="checkQ(this, false)">Я покупаю.</button>
+        </div>
+    </div>
+
+    <!-- AUFGABE 3: Grammatik - Geschlecht -->
+    <div class="task-card" id="task3">
+        <h2>3. Wer ist reingefallen?</h2>
+        <p>Eine Freundin (weiblich) hat deinen Witz geglaubt. Was rufst du?</p>
+        <div class="options">
+            <button class="opt-btn" onclick="checkQ(this, false)">Ты купился!</button>
+            <button class="opt-btn" onclick="checkQ(this, true)">Ты купилась!</button>
+            <button class="opt-btn" onclick="checkQ(this, false)">Ты купились!</button>
+        </div>
+    </div>
+
+    <!-- AUFGABE 4: Logik -->
+    <div class="task-card" id="task4">
+        <h2>4. Logik-Check</h2>
+        <p>Kann man das Verb <strong>купиться</strong> im Supermarkt verwenden, um zu sagen, dass man Milch bezahlt hat?</p>
+        <div class="options">
+            <button class="opt-btn" onclick="checkQ(this, false)">Ja, es bedeutet bezahlen.</button>
+            <button class="opt-btn" onclick="checkQ(this, true)">Nein, es bedeutet, getäuscht zu werden.</button>
+        </div>
+    </div>
+
+    <!-- AUFGABE 5: Plural -->
+    <div class="task-card" id="task5">
+        <h2>5. Mehrere Personen</h2>
+        <p>Du hast eine ganze Gruppe von Schülern mit einem Fake-Termin reingelegt. Wie lautet die Pluralform?</p>
+        <div class="options">
+            <button class="opt-btn" onclick="checkQ(this, false)">Вы купилась.</button>
+            <button class="opt-btn" onclick="checkQ(this, true)">Вы купились!</button>
+            <button class="opt-btn" onclick="checkQ(this, false)">Вы купился.</button>
+        </div>
+    </div>
+
+    <!-- AUFGABE 6: Reflexive Endung -->
+    <div class="task-card" id="task6">
+        <h2>6. Die Endung</h2>
+        <p>Was macht den Unterschied in der Bedeutung zwischen „kaufen“ und „reinfallen“ aus?</p>
+        <div class="options">
+            <button class="opt-btn" onclick="checkQ(this, false)">Das Präfix по-</button>
+            <button class="opt-btn" onclick="checkQ(this, true)">Die Endung -ся</button>
+            <button class="opt-btn" onclick="checkQ(this, false)">Ein zweiter Buchstabe 'у'</button>
+        </div>
+    </div>
+
+    <div class="nav-controls">
+        <button class="main-btn" id="prevBtn" onclick="changeTask(-1)" disabled>Zurück</button>
+        <button class="main-btn" id="nextBtn" onclick="changeTask(1)">Weiter</button>
+        <button class="main-btn" id="resetBtn" onclick="resetAll()" style="display:none; background: var(--error);">Neustart</button>
+    </div>
+</div>
+
+<script>
+    let currentTask = 1;
+    const totalTasks = 6;
+
+    // Drag and Drop Logic
+    const draggables = document.querySelectorAll('.draggable');
+    const dropZones = document.querySelectorAll('.drop-zone');
+
+    draggables.forEach(d => {
+        d.addEventListener('dragstart', () => d.classList.add('dragging'));
+        d.addEventListener('dragend', () => d.classList.remove('dragging'));
+        // Touch support
+        d.addEventListener('touchstart', (e) => {
+            d.classList.add('dragging');
+        }, {passive: true});
+    });
+
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', e => {
+            e.preventDefault();
+        });
+        zone.addEventListener('drop', e => {
+            const draggable = document.querySelector('.dragging');
+            if(draggable.innerText === zone.dataset.ans) {
+                zone.appendChild(draggable);
+                zone.classList.add('correct');
+            }
+        });
+    });
+
+    // Quiz Logic
+    function checkQ(btn, isCorrect) {
+        const parent = btn.parentElement;
+        const buttons = parent.querySelectorAll('.opt-btn');
+        buttons.forEach(b => b.disabled = true);
+        
+        if(isCorrect) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            buttons.forEach(b => {
+                // Markiere die richtige Antwort trotzdem
+                if(b.innerText.includes('купилась') || b.innerText.includes('Купился') || b.innerText.includes('Nein') || b.innerText.includes('купились') || b.innerText.includes('-ся')) {
+                   b.classList.add('correct');
+                }
+            });
+        }
+    }
+
+    function changeTask(step) {
+        document.getElementById(`task${currentTask}`).classList.remove('active');
+        currentTask += step;
+        document.getElementById(`task${currentTask}`).classList.add('active');
+        
+        document.getElementById('prevBtn').disabled = currentTask === 1;
+        document.getElementById('nextBtn').style.display = currentTask === totalTasks ? 'none' : 'inline-block';
+        document.getElementById('resetBtn').style.display = currentTask === totalTasks ? 'inline-block' : 'none';
+        
+        document.getElementById('progressFill').style.width = (currentTask / totalTasks * 100) + '%';
+    }
+
+    function resetAll() {
+        location.reload(); // Einfachster Weg für kompletten Reset
+    }
+</script>
+
+</body>
+</html>
