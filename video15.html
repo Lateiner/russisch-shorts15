@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video-Quiz: Stabil & Sicher</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c; 
+            --success: #27ae60;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .video-link-card {
+            background: #fff0f0;
+            border: 2px dashed var(--accent);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .yt-button {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+
+        .yt-button:hover { transform: scale(1.05); }
+
+        .quiz-section {
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+
+        .question-box {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover:not(:disabled) { border-color: var(--primary); background: #f0f0f0; }
+
+        .correct { background-color: var(--success) !important; color: white; border-color: var(--success) !important; }
+        .wrong { background-color: #e74c3c !important; color: white; border-color: #e74c3c !important; }
+
+        #feedback { margin-top: 15px; font-weight: bold; min-height: 24px; }
+
+        .controls {
+            margin-top: 25px;
+        }
+
+        .reset-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .reset-btn:hover { background: #7f8c8d; }
+
+        @media (min-width: 480px) {
+            .options { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Schritt 1: Video schauen</h2>
+    <div class="video-link-card">
+        <p>Schau dir das Video auf YouTube an.<br><strong>Achte besonders auf Sekunde 0:24!</strong></p>
+        <a href="https://www.youtube.com/watch?v=-n-WwVcASYw" target="_blank" class="yt-button">
+            📺 Video auf YouTube öffnen
+        </a>
+    </div>
+
+    <div class="quiz-section">
+        <h2>Schritt 2: Quiz lösen</h2>
+        <div class="question-box">
+            Was meint die Person, wenn sie sagt: <br>"Ой, я на это купился"?
+        </div>
+
+        <div class="options" id="options-grid">
+            <button class="option-btn" onclick="check(this, false)">Ich habe es gekauft.</button>
+            <button class="option-btn" onclick="check(this, true)">Ich bin darauf reingefallen.</button>
+            <button class="option-btn" onclick="check(this, false)">Ich habe Geld verloren.</button>
+            <button class="option-btn" onclick="check(this, false)">Ich finde es toll.</button>
+        </div>
+        
+        <div id="feedback"></div>
+
+        <div class="controls">
+            <button class="reset-btn" onclick="resetQuiz()">🔄 Aufgabe neustarten</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let answered = false;
+
+    function check(btn, isCorrect) {
+        if (answered) return; // Verhindert mehrfaches Klicken nach der Lösung
+
+        const feedback = document.getElementById('feedback');
+        
+        if (isCorrect) {
+            answered = true;
+            btn.classList.add('correct');
+            feedback.innerText = "Richtig! ✨ Es bedeutet umgangssprachlich 'reingelegt werden'.";
+            feedback.style.color = "var(--success)";
+            
+            // Andere Buttons deaktivieren
+            document.querySelectorAll('.option-btn').forEach(b => {
+                if (b !== btn) b.style.opacity = "0.5";
+            });
+        } else {
+            btn.classList.add('wrong');
+            feedback.innerText = "Leider falsch. Schau nochmal bei 0:24 genau hin!";
+            feedback.style.color = "#e74c3c";
+            
+            // Kurzes "Wackeln" simulieren und Markierung nach 1 Sekunde entfernen, falls falsch
+            setTimeout(() => {
+                if (!answered) {
+                    btn.classList.remove('wrong');
+                    feedback.innerText = "";
+                }
+            }, 1200);
+        }
+    }
+
+    function resetQuiz() {
+        answered = false;
+        const feedback = document.getElementById('feedback');
+        feedback.innerText = "";
+        
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.classList.remove('correct', 'wrong');
+            btn.style.opacity = "1";
+        });
+    }
+</script>
+
+</body>
+</html>
