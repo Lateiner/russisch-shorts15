@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Wortpaare finden</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h2 { text-align: center; margin-bottom: 10px; }
+        p { text-align: center; max-width: 600px; margin-bottom: 30px; }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            width: 100%;
+            max-width: 800px;
+            align-items: center;
+        }
+
+        .words-section {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            min-height: 60px;
+        }
+
+        .word {
+            background-color: white;
+            border: 2px solid var(--accent-color);
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            user-select: none;
+            touch-action: none;
+            position: relative;
+        }
+
+        .word:active { cursor: grabbing; }
+
+        .targets-section {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .target-box {
+            background-color: #e0e0e0;
+            border: 3px dashed #bdc3c7;
+            border-radius: 12px;
+            width: 250px;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .target-box.hover {
+            background-color: #d1ecf1;
+            border-color: var(--accent-color);
+        }
+
+        .target-box.correct {
+            background-color: #d4edda;
+            border-color: var(--success-color);
+            border-style: solid;
+        }
+
+        .icon { font-size: 3rem; margin-bottom: 10px; pointer-events: none; }
+        .label { font-weight: bold; font-size: 1rem; color: #7f8c8d; pointer-events: none; }
+
+        .controls {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .success-message {
+            font-weight: bold;
+            color: var(--success-color);
+            display: none;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        #reset-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+            display: none;
+        }
+
+        #reset-btn:hover { background-color: #34495e; }
+
+        @media (max-width: 600px) {
+            .target-box { width: 100%; min-height: 150px; }
+            .word { font-size: 1rem; padding: 10px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Russisch-Training: Was bedeutet was?</h2>
+    <p>Ziehe das russische Wort auf das passende Symbol.</p>
+
+    <div class="game-container">
+        <div class="words-section" id="words-origin">
+            <div class="word" draggable="true" id="verb-kaufen" data-target="buy">купить</div>
+            <div class="word" draggable="true" id="verb-reinfallen" data-target="trick">купиться</div>
+        </div>
+
+        <div class="targets-section">
+            <div class="target-box" data-accept="buy" id="box-buy">
+                <div class="icon">🛒</div>
+                <div class="label">„kaufen“</div>
+            </div>
+            <div class="target-box" data-accept="trick" id="box-trick">
+                <div class="icon">🤡</div>
+                <div class="label">„auf einen Scherz reinfallen“</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="success-message" id="win-text">Super! Alles richtig zugeordnet.</div>
+        <button id="reset-btn">Neustart</button>
+    </div>
+
+    <script>
+        const words = document.querySelectorAll('.word');
+        const boxes = document.querySelectorAll('.target-box');
+        const winText = document.getElementById('win-text');
+        const resetBtn = document.getElementById('reset-btn');
+        const wordsOrigin = document.getElementById('words-origin');
+        
+        let correctDrops = 0;
+
+        // Desktop Drag & Drop
+        words.forEach(word => {
+            word.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', e.target.id);
+            });
+        });
+
+        boxes.forEach(box => {
+            box.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                box.classList.add('hover');
+            });
+
+            box.addEventListener('dragleave', () => {
+                box.classList.remove('hover');
+            });
+
+            box.addEventListener('drop', (e) => {
+                e.preventDefault();
+                box.classList.remove('hover');
+                const wordId = e.dataTransfer.getData('text');
+                const wordElement = document.getElementById(wordId);
+                handleDrop(wordElement, box);
+            });
+        });
+
+        function handleDrop(wordElement, box) {
+            const wordType = wordElement.getAttribute('data-target');
+            const boxType = box.getAttribute('data-accept');
+
+            if (wordType === boxType) {
+                box.appendChild(wordElement);
+                wordElement.setAttribute('draggable', 'false');
+                wordElement.style.cursor = 'default';
+                wordElement.style.backgroundColor = '#d4edda';
+                wordElement.style.position = 'static';
+                box.classList.add('correct');
+                correctDrops++;
+                checkWin();
+            } else {
+                box.style.backgroundColor = '#f8d7da';
+                setTimeout(() => { if(!box.classList.contains('correct')) box.style.backgroundColor = ''; }, 500);
+            }
+        }
+
+        function checkWin() {
+            if (correctDrops === 2) {
+                winText.style.display = 'block';
+                resetBtn.style.display = 'inline-block';
+            }
+        }
+
+        // Neustart-Logik
+        resetBtn.addEventListener('click', () => {
+            correctDrops = 0;
+            winText.style.display = 'none';
+            resetBtn.style.display = 'none';
+            
+            boxes.forEach(box => {
+                box.classList.remove('correct');
+                box.style.backgroundColor = '';
+            });
+
+            words.forEach(word => {
+                word.setAttribute('draggable', 'true');
+                word.style.cursor = 'grab';
+                word.style.backgroundColor = 'white';
+                word.style.position = 'static';
+                wordsOrigin.appendChild(word);
+            });
+        });
+
+        // Touch Support
+        let activeWord = null;
+        words.forEach(word => {
+            word.addEventListener('touchstart', function(e) {
+                if(this.getAttribute('draggable') === 'false') return;
+                activeWord = this;
+                this.style.zIndex = '1000';
+            }, {passive: true});
+
+            word.addEventListener('touchmove', function(e) {
+                if (!activeWord) return;
+                const touch = e.touches[0];
+                this.style.position = 'absolute';
+                this.style.left = (touch.pageX - this.offsetWidth / 2) + 'px';
+                this.style.top = (touch.pageY - this.offsetHeight / 2) + 'px';
+            }, {passive: true});
+
+            word.addEventListener('touchend', function(e) {
+                if (!activeWord) return;
+                const touch = e.changedTouches[0];
+                this.style.display = 'none';
+                const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                this.style.display = 'block';
+                const box = elemBelow ? elemBelow.closest('.target-box') : null;
+
+                if (box && !box.classList.contains('correct')) {
+                    handleDrop(this, box);
+                }
+                
+                if (!this.parentElement.classList.contains('target-box')) {
+                    this.style.position = 'static';
+                }
+                activeWord = null;
+            });
+        });
+    </script>
+</body>
+</html>
