@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kategorisierung: Drag & Drop</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            touch-action: manipulation;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        .pool {
+            background: white;
+            border: 2px dashed #bdc3c7;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            min-height: 100px;
+        }
+
+        .draggable-item {
+            background: var(--accent);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-weight: bold;
+            touch-action: none; /* Wichtig für mobiles Drag & Drop */
+        }
+
+        .draggable-item:active { cursor: grabbing; }
+
+        .drop-zones {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .zone {
+            background: #ecf0f1;
+            border: 3px dashed #bdc3c7;
+            border-radius: 15px;
+            min-height: 200px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .zone h3 { margin-top: 0; font-size: 1.1rem; color: var(--primary); }
+
+        .zone.drag-over {
+            background: #d1ecf1;
+            border-color: var(--accent);
+            transform: scale(1.02);
+        }
+
+        .zone.correct-zone { border-style: solid; background: #e8f5e9; border-color: var(--success); }
+
+        .item-in-box {
+            background: var(--primary);
+            color: white;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .controls { margin-top: 30px; }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        button:hover { background: #34495e; }
+
+        @media (max-width: 600px) {
+            .drop-zones { grid-template-columns: 1fr; }
+            .draggable-item { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Kategorisierung: Drag & Drop</h2>
+    <p>Ziehe die Sätze in den richtigen Kasten:</p>
+
+    <div class="pool" id="sentencePool">
+        <!-- Sätze werden geladen -->
+    </div>
+
+    <div class="drop-zones">
+        <div class="zone" id="buyZone" data-type="buy">
+            <h3>🛒 Echtes Kaufen</h3>
+        </div>
+        <div class="zone" id="trickZone" data-type="trick">
+            <h3>🤡 Reingefallen</h3>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="initGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const sentences = [
+        { text: "Я купил хлеб.", type: "buy" },
+        { text: "Ты купился!", type: "trick" },
+        { text: "Она купила сок.", type: "buy" },
+        { text: "Мы купились.", type: "trick" },
+        { text: "Вы купили дом?", type: "buy" },
+        { text: "Он купился на шутку.", type: "trick" }
+    ];
+
+    function initGame() {
+        const pool = document.getElementById('sentencePool');
+        const buyZone = document.getElementById('buyZone');
+        const trickZone = document.getElementById('trickZone');
+
+        // Reset
+        pool.innerHTML = '';
+        buyZone.innerHTML = '<h3>🛒 Echtes Kaufen</h3>';
+        trickZone.innerHTML = '<h3>🤡 Reingefallen</h3>';
+        
+        // Sätze mischen und erstellen
+        [...sentences].sort(() => Math.random() - 0.5).forEach((s, i) => {
+            const el = document.createElement('div');
+            el.className = 'draggable-item';
+            el.innerText = s.text;
+            el.id = 's-' + i;
+            el.setAttribute('draggable', 'true');
+            el.dataset.type = s.type;
+
+            // Desktop Drag Events
+            el.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text', el.id);
+            });
+
+            // Touch Support (Mobil)
+            el.addEventListener('touchstart', handleTouchStart, {passive: false});
+            el.addEventListener('touchmove', handleTouchMove, {passive: false});
+            el.addEventListener('touchend', handleTouchEnd, {passive: false});
+
+            pool.appendChild(el);
+        });
+    }
+
+    // Drop Zone Events (Desktop)
+    const zones = document.querySelectorAll('.zone');
+    zones.forEach(zone => {
+        zone.addEventListener('dragover', e => e.preventDefault());
+        zone.addEventListener('dragenter', () => zone.classList.add('drag-over'));
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+            const id = e.dataTransfer.getData('text');
+            const el = document.getElementById(id);
+            validateDrop(el, zone);
+        });
+    });
+
+    function validateDrop(el, zone) {
+        if (el.dataset.type === zone.dataset.type) {
+            const newItem = document.createElement('div');
+            newItem.className = 'item-in-box';
+            newItem.innerText = el.innerText;
+            zone.appendChild(newItem);
+            el.remove();
+        } else {
+            zone.style.borderColor = 'var(--error)';
+            setTimeout(() => zone.style.borderColor = '', 500);
+        }
+    }
+
+    // Touch Logic für Smartphones
+    let activeEl = null;
+    let offsetX, offsetY;
+
+    function handleTouchStart(e) {
+        activeEl = this;
+        const touch = e.touches[0];
+        const rect = activeEl.getBoundingClientRect();
+        offsetX = touch.clientX - rect.left;
+        offsetY = touch.clientY - rect.top;
+        activeEl.style.position = 'fixed';
+        activeEl.style.zIndex = '1000';
+    }
+
+    function handleTouchMove(e) {
+        if (!activeEl) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        activeEl.style.left = (touch.clientX - offsetX) + 'px';
+        activeEl.style.top = (touch.clientY - offsetY) + 'px';
+    }
+
+    function handleTouchEnd(e) {
+        if (!activeEl) return;
+        const touch = e.changedTouches[0];
+        activeEl.style.display = 'none';
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        activeEl.style.display = 'block';
+
+        const zone = target ? target.closest('.zone') : null;
+        if (zone) {
+            validateDrop(activeEl, zone);
+        }
+        
+        if (activeEl && activeEl.parentNode === document.getElementById('sentencePool')) {
+            activeEl.style.position = 'static';
+        }
+        activeEl = null;
+    }
+
+    initGame();
+</script>
+
+</body>
+</html>
