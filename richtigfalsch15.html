@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Richtig oder Falsch? Swipe-Check</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+        }
+
+        .card-stack {
+            position: relative;
+            height: 350px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            box-sizing: border-box;
+            cursor: grab;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .card h3 {
+            font-size: 1.4rem;
+            color: var(--primary);
+            pointer-events: none;
+        }
+
+        .instruction {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+        }
+
+        .btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .btn:active { transform: scale(0.9); }
+
+        .btn-wrong { background: var(--error); color: white; }
+        .btn-correct { background: var(--success); color: white; }
+
+        .score-display {
+            margin-top: 20px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        /* Overlay Indikatoren beim Swipen */
+        .stamp {
+            position: absolute;
+            top: 20px;
+            padding: 10px 20px;
+            border: 4px solid;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 2rem;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .stamp-right { left: 20px; color: var(--success); border-color: var(--success); transform: rotate(-20deg); }
+        .stamp-left { right: 20px; color: var(--error); border-color: var(--error); transform: rotate(20deg); }
+
+        #final-screen {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div id="game-active">
+        <p class="instruction">⬅️ Links: FALSCH | Rechts: RICHTIG ➡️</p>
+        
+        <div class="card-stack" id="cardStack">
+            <!-- Karten werden hier generiert -->
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-wrong" onclick="handleButton(false)">✖️</button>
+            <button class="btn btn-correct" onclick="handleButton(true)">✔️</button>
+        </div>
+    </div>
+
+    <div id="final-screen">
+        <h2>Geschafft!</h2>
+        <p id="final-score" class="score-display"></p>
+        <button class="btn-correct" style="padding: 15px 30px; border-radius: 10px; width: auto; height: auto;" onclick="location.reload()">Nochmal spielen</button>
+    </div>
+</div>
+
+<script>
+    const statements = [
+        { text: "Man benutzt 'купиться' nur im Supermarkt.", correct: false },
+        { text: "Es bedeutet umgangssprachlich 'auf einen Trick reinfallen'.", correct: true },
+        { text: "Die Form 'купился' wird für männliche Personen genutzt.", correct: true },
+        { text: "Das Wort hat nichts mit dem Verb 'kaufen' zu tun.", correct: false },
+        { text: "'Ты купилась!' sagt man zu einem Mädchen.", correct: true }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+    let isAnimating = false;
+
+    const cardStack = document.getElementById('cardStack');
+
+    function createCard(idx) {
+        if (idx >= statements.length) return null;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `<h3>${statements[idx].text}</h3>
+                         <div class="stamp stamp-right">RICHTIG</div>
+                         <div class="stamp stamp-left">FALSCH</div>`;
+        
+        // Touch/Mouse Events für Swipe
+        let startX = 0;
+        let currentX = 0;
+
+        const start = (e) => {
+            if (isAnimating) return;
+            startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            card.style.transition = 'none';
+        };
+
+        const move = (e) => {
+            if (!startX || isAnimating) return;
+            currentX = (e.type.includes('touch') ? e.touches[0].clientX : e.clientX) - startX;
+            const rotation = currentX / 15;
+            card.style.transform = `translateX(${currentX}px) rotate(${rotation}deg)`;
+            
+            // Stempel einblenden
+            const stampRight = card.querySelector('.stamp-right');
+            const stampLeft = card.querySelector('.stamp-left');
+            if (currentX > 20) {
+                stampRight.style.opacity = Math.min(currentX / 100, 1);
+                stampLeft.style.opacity = 0;
+            } else if (currentX < -20) {
+                stampLeft.style.opacity = Math.min(Math.abs(currentX) / 100, 1);
+                stampRight.style.opacity = 0;
+            }
+        };
+
+        const end = () => {
+            if (!startX || isAnimating) return;
+            card.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
+            if (currentX > 100) {
+                swipeCard(card, true);
+            } else if (currentX < -100) {
+                swipeCard(card, false);
+            } else {
+                card.style.transform = 'translateX(0) rotate(0)';
+                card.querySelectorAll('.stamp').forEach(s => s.style.opacity = 0);
+            }
+            startX = 0;
+        };
+
+        card.addEventListener('touchstart', start);
+        card.addEventListener('touchmove', move);
+        card.addEventListener('touchend', end);
+        card.addEventListener('mousedown', start);
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', end);
+
+        return card;
+    }
+
+    function swipeCard(card, isRight) {
+        isAnimating = true;
+        const direction = isRight ? 1 : -1;
+        card.style.transform = `translateX(${direction * 1000}px) rotate(${direction * 45}deg)`;
+        card.style.opacity = '0';
+
+        // Logik prüfen
+        if (isRight === statements[currentIdx].correct) {
+            score++;
+        }
+
+        currentIdx++;
+        setTimeout(() => {
+            card.remove();
+            isAnimating = false;
+            if (currentIdx < statements.length) {
+                renderTopCard();
+            } else {
+                showFinal();
+            }
+        }, 400);
+    }
+
+    function handleButton(isRight) {
+        if (isAnimating) return;
+        const card = cardStack.querySelector('.card');
+        if (card) swipeCard(card, isRight);
+    }
+
+    function renderTopCard() {
+        const nextCard = createCard(currentIdx);
+        if (nextCard) cardStack.appendChild(nextCard);
+    }
+
+    function showFinal() {
+        document.getElementById('game-active').style.display = 'none';
+        const finalScreen = document.getElementById('final-screen');
+        finalScreen.style.display = 'block';
+        document.getElementById('final-score').innerText = `Punkte: ${score} von ${statements.length}`;
+    }
+
+    // Initialisierung
+    renderTopCard();
+</script>
+
+</body>
+</html>
