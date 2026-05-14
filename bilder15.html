@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bild-Situations-Zuordnung: купиться</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .task-unit {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .sentence-display {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: inline-block;
+            min-width: 250px;
+        }
+
+        .instruction {
+            color: #555;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .option-card {
+            border: 3px solid #eee;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fff;
+        }
+
+        .option-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+        }
+
+        .emoji-display {
+            font-size: 4.5rem;
+            margin-bottom: 15px;
+        }
+
+        .label {
+            font-size: 0.95rem;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        /* Status-Styles */
+        .option-card.correct {
+            border-color: var(--success);
+            background-color: #e8f5e9;
+        }
+
+        .option-card.wrong {
+            border-color: var(--error);
+            background-color: #ffebee;
+            opacity: 0.6;
+        }
+
+        .feedback {
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 20px;
+        }
+
+        #reset-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        #reset-btn:hover { background: #1a252f; }
+
+        @media (max-width: 600px) {
+            .emoji-display { font-size: 3.5rem; }
+            .sentence-display { font-size: 1.4rem; width: 90%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 style="text-align:center;">Bild-Zuordnung: Was passt?</h1>
+    <p style="text-align:center;">Wähle für jedes Beispiel das Bild aus, das die Bedeutung von <b>купиться</b> (reinfallen/glauben) am besten trifft.</p>
+
+    <!-- BEISPIEL 1 -->
+    <div class="task-unit" id="task1">
+        <div class="instruction">Beispiel 1: Ein Mann wird veralbert.</div>
+        <div class="sentence-display">Он купился</div>
+        <div class="image-grid">
+            <div class="option-card" onclick="check(this, 1, false)">
+                <div class="emoji-display">🛒</div>
+                <div class="label">Er kauft Lebensmittel im Supermarkt.</div>
+            </div>
+            <div class="option-card" onclick="check(this, 1, true)">
+                <div class="emoji-display">🤡</div>
+                <div class="label">Er glaubt eine Lüge und wird ausgelacht.</div>
+            </div>
+            <div class="option-card" onclick="check(this, 1, false)">
+                <div class="emoji-display">💵</div>
+                <div class="label">Er zählt sein Geld nach dem Verkauf.</div>
+            </div>
+        </div>
+        <div class="feedback" id="fb1"></div>
+    </div>
+
+    <!-- BEISPIEL 2 -->
+    <div class="task-unit" id="task2">
+        <div class="instruction">Beispiel 2: Eine Frau glaubt einen Scherz.</div>
+        <div class="sentence-display">Она купилась</div>
+        <div class="image-grid">
+            <div class="option-card" onclick="check(this, 2, true)">
+                <div class="emoji-display">😲</div>
+                <div class="label">Sie ist schockiert über eine Fake-News.</div>
+            </div>
+            <div class="option-card" onclick="check(this, 2, false)">
+                <div class="emoji-display">👗</div>
+                <div class="label">Sie kauft sich ein neues Kleid.</div>
+            </div>
+            <div class="option-card" onclick="check(this, 2, false)">
+                <div class="emoji-display">💳</div>
+                <div class="label">Sie bezahlt an der Kasse.</div>
+            </div>
+        </div>
+        <div class="feedback" id="fb2"></div>
+    </div>
+
+    <!-- BEISPIEL 3 -->
+    <div class="task-unit" id="task3">
+        <div class="instruction">Beispiel 3: Eine Gruppe wurde reingelegt.</div>
+        <div class="sentence-display">Они купились</div>
+        <div class="image-grid">
+            <div class="option-card" onclick="check(this, 3, false)">
+                <div class="emoji-display">🛍️</div>
+                <div class="label">Sie tragen schwere Einkaufstüten.</div>
+            </div>
+            <div class="option-card" onclick="check(this, 3, false)">
+                <div class="emoji-display">🏦</div>
+                <div class="label">Sie holen Geld von der Bank.</div>
+            </div>
+            <div class="option-card" onclick="check(this, 3, true)">
+                <div class="emoji-display">🎣</div>
+                <div class="label">Sie sind alle auf den Köder reingefallen.</div>
+            </div>
+        </div>
+        <div class="feedback" id="fb3"></div>
+    </div>
+
+    <!-- BEISPIEL 4 -->
+    <div class="task-unit" id="task4">
+        <div class="instruction">Beispiel 4: Du bist auf mich reingefallen!</div>
+        <div class="sentence-display">Ты купился</div>
+        <div class="image-grid">
+            <div class="option-card" onclick="check(this, 4, false)">
+                <div class="emoji-display">📦</div>
+                <div class="label">Du hast ein Paket bestellt.</div>
+            </div>
+            <div class="option-card" onclick="check(this, 4, true)">
+                <div class="emoji-display">😜</div>
+                <div class="label">Du hast meinen Witz für wahr gehalten.</div>
+            </div>
+            <div class="option-card" onclick="check(this, 4, false)">
+                <div class="emoji-display">🏧</div>
+                <div class="label">Du stehst am Geldautomaten.</div>
+            </div>
+        </div>
+        <div class="feedback" id="fb4"></div>
+    </div>
+
+    <div style="text-align:center; padding-bottom: 50px;">
+        <button id="reset-btn" onclick="resetAll()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    function check(card, taskId, isCorrect) {
+        const parent = document.getElementById('task' + taskId);
+        const cards = parent.querySelectorAll('.option-card');
+        const feedback = document.getElementById('fb' + taskId);
+
+        // Deaktiviere weitere Klicks für dieses Beispiel
+        cards.forEach(c => c.style.pointerEvents = 'none');
+
+        if (isCorrect) {
+            card.classList.add('correct');
+            feedback.style.color = 'var(--success)';
+            feedback.innerText = 'Richtig! Hier geht es um die Täuschung.';
+        } else {
+            card.classList.add('wrong');
+            feedback.style.color = 'var(--error)';
+            feedback.innerText = 'Falsch. Das beschreibt einen Kaufvorgang.';
+            
+            // Richtige Antwort zeigen
+            cards.forEach(c => {
+                // In jedem Set ist die richtige Antwort an einer anderen Stelle, 
+                // daher suchen wir sie dynamisch
+                if (c.getAttribute('onclick').includes('true')) {
+                    c.classList.add('correct');
+                }
+            });
+        }
+    }
+
+    function resetAll() {
+        const allCards = document.querySelectorAll('.option-card');
+        const allFeedbacks = document.querySelectorAll('.feedback');
+        
+        allCards.forEach(c => {
+            c.classList.remove('correct', 'wrong');
+            c.style.pointerEvents = 'auto';
+        });
+
+        allFeedbacks.forEach(f => f.innerText = '');
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+</script>
+
+</body>
+</html>
